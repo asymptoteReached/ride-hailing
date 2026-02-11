@@ -1,0 +1,3153 @@
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:math';
+
+double simpleFare(LatLng pickup, LatLng dropoff) {
+  const double baseFare = 5.0; // fixed starting fare
+  const double perKm = 2.0; // rate per km
+
+  double toRadians(double degree) => degree * pi / 180;
+
+  double lat1 = pickup.latitude;
+  double lon1 = pickup.longitude;
+  double lat2 = dropoff.latitude;
+  double lon2 = dropoff.longitude;
+
+  double dLat = toRadians(lat2 - lat1);
+  double dLon = toRadians(lon2 - lon1);
+
+  double a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(toRadians(lat1)) *
+          cos(toRadians(lat2)) *
+          sin(dLon / 2) *
+          sin(dLon / 2);
+  double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  const R = 6371; // Earth radius in km
+  double distanceKm = R * c;
+
+  double fare = baseFare + (distanceKm * perKm);
+  return double.parse(fare.toStringAsFixed(2)); // rounded to 2 decimals
+}
+
+import 'package:eats/authentication/email_sign_up.dart';
+import 'package:eats/authentication/login_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:eats/utils/create_user_acc.dart';
+
+class EmailLogin extends StatefulWidget {
+  const EmailLogin({
+    super.key,
+  });
+
+  @override
+  State<EmailLogin> createState() => _EmailLogin();
+}
+
+class _EmailLogin extends State<EmailLogin> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: Text('Login'),
+        ),
+        body: Container(
+          padding: EdgeInsets.all(15),
+          margin: EdgeInsets.only(top: 5, bottom: 5, right: 10, left: 10),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 5,
+              ),
+              TextField(
+                  keyboardType: TextInputType.emailAddress,
+                  controller: emailController,
+                  decoration: InputDecoration(labelText: 'Enter your email'),
+                  style: TextStyle(color: Colors.white)),
+              SizedBox(height: 10),
+              TextField(
+                  keyboardType: TextInputType.emailAddress,
+                  controller: passwordController,
+                  decoration: InputDecoration(labelText: 'Enter your password'),
+                  obscureText: true,
+                  style: TextStyle(color: Colors.white)),
+              SizedBox(
+                height: 5,
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  CircularProgressIndicator(color: Colors.white);
+                  final String emailAddress = emailController.text.trim();
+                  final String password = passwordController.text.trim();
+                  await CreateOrSignUser().signInWithEmailAndPassword(
+                      emailAddress, password, context);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => LoginScreen(role: 'driver')),
+                  );
+                },
+                child: Text(
+                    'Login'), // ✅ this belongs to the ElevatedButton itself
+              ),
+              SizedBox(height: 7),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Padding(padding: EdgeInsetsGeometry.all(20)),
+                  Text('Don\'t have an account?'),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => EmailSignUp()));
+                      },
+                      child: Text('Sign Up'))
+                ],
+              )
+            ],
+          ),
+        ));
+  }
+}
+
+import 'package:eats/authentication/email_login.dart';
+import 'package:eats/authentication/login_screen.dart';
+import 'package:eats/utils/common_methods.dart';
+import 'package:flutter/material.dart';
+import 'package:eats/utils/create_user_acc.dart';
+
+class EmailSignUp extends StatefulWidget {
+  const EmailSignUp({
+    super.key,
+  });
+
+  @override
+  State<EmailSignUp> createState() => _EmailSignUp();
+}
+
+class _EmailSignUp extends State<EmailSignUp> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController phoneNumberController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: Text('Create an account'),
+        ),
+        body: Container(
+          padding: EdgeInsets.all(5),
+          margin: EdgeInsets.only(left: 10, right: 10, top: 5, bottom: 5),
+          child: Column(
+            children: [
+              Padding(padding: EdgeInsetsGeometry.all(5)),
+              TextField(
+                keyboardType: TextInputType.text,
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Enter your Name'),
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              TextField(
+                keyboardType: TextInputType.number,
+                controller: phoneNumberController,
+                decoration:
+                    InputDecoration(labelText: 'Enter your phone number'),
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              TextField(
+                keyboardType: TextInputType.emailAddress,
+                controller: emailController,
+                decoration: InputDecoration(labelText: 'Enter your email'),
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              TextField(
+                keyboardType: TextInputType.emailAddress,
+                controller: passwordController,
+                decoration: InputDecoration(labelText: 'Create your password'),
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  CircularProgressIndicator();
+                  final String name = nameController.text.trim();
+                  final String phoneNumber = phoneNumberController.text.trim();
+                  final String emailAddress = emailController.text.trim();
+                  final String password = passwordController.text.trim();
+
+                  if (password.length < 8) {
+                    CommonMethods.displaySnackBar(
+                        'Password must have 8 or more characters', context);
+                    return;
+                  }
+
+                  bool success = await CreateOrSignUser()
+                      .createUserWithEmailAndPassword(
+                          name, phoneNumber, emailAddress, password, context);
+
+                  if (success == true) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => LoginScreen(role: 'drivers')),
+                    );
+                  }
+                },
+
+                child: Text(
+                    'Sign Up'), // ✅ this belongs to the ElevatedButton itself
+              ),
+              SizedBox(
+                height: 7,
+              ),
+              Row(
+                children: [
+                  Text('Already have account?'),
+                  SizedBox(width: 10),
+                  ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(context,
+                            MaterialPageRoute(builder: (context) {
+                          return EmailLogin();
+                        }));
+                      },
+                      child: Text('Login here'))
+                ],
+              )
+            ],
+          ),
+        ));
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:eats/services/firebase_service.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Google Maps
+import 'package:location/location.dart'; // Location tracking
+
+class DriverHomeScreen extends StatefulWidget {
+  const DriverHomeScreen({super.key});
+
+  @override
+  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
+}
+
+class _DriverHomeScreenState extends State<DriverHomeScreen> {
+  final FirebaseService _fs = FirebaseService();
+  final Location _location = Location();
+  GoogleMapController? _mapController;
+  LatLng? _currentLocation;
+
+  @override
+  void initState() {
+    super.initState();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    final loc = await _location.getLocation();
+    setState(() {
+      _currentLocation = LatLng(loc.latitude!, loc.longitude!);
+    });
+
+    _location.onLocationChanged.listen((locData) {
+      if (_mapController != null) {
+        final newLoc = LatLng(locData.latitude!, locData.longitude!);
+        _mapController!.animateCamera(CameraUpdate.newLatLng(newLoc));
+        _fs.updateDriverLocation(
+          driverId: 'driver_test_1',
+          lat: locData.latitude!,
+          lng: locData.longitude!,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _currentLocation == null
+          ? Center(child: CircularProgressIndicator())
+          : GoogleMap(
+              initialCameraPosition:
+                  CameraPosition(target: _currentLocation!, zoom: 14),
+              myLocationEnabled: true,
+              myLocationButtonEnabled: true,
+            ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
+import 'package:eats/services/firebase_service.dart';
+import 'package:eats/models/ride_model.dart';
+
+class DriverRequestListScreen extends StatefulWidget {
+  const DriverRequestListScreen({super.key});
+
+  @override
+  State<DriverRequestListScreen> createState() =>
+      _DriverRequestListScreenState();
+}
+
+class _DriverRequestListScreenState extends State<DriverRequestListScreen> {
+  final FirebaseService _fs = FirebaseService();
+  Ride? _acceptedRide;
+  LocationData? _driverLocation;
+  late final Location _location;
+
+  @override
+  void initState() {
+    super.initState();
+    _location = Location();
+    _initLocation();
+  }
+
+  Future<void> _initLocation() async {
+    final hasPermission = await _location.requestPermission();
+    if (hasPermission == PermissionStatus.granted) {
+      _location.onLocationChanged.listen((loc) {
+        setState(() => _driverLocation = loc);
+        if (_acceptedRide != null) {
+          _fs.updateDriverLocation(
+            driverId: _acceptedRide!.id,
+            lat: loc.latitude!,
+            lng: loc.longitude!,
+          );
+        }
+      });
+    }
+  }
+
+  Future<String> _formatAddress(Map<String, dynamic> coords) async {
+    try {
+      final placemarks = await geocoding.placemarkFromCoordinates(
+        coords['lat'],
+        coords['lng'],
+      );
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        return "${p.street}, ${p.locality}";
+      }
+    } catch (_) {}
+    return "${coords['lat']}, ${coords['lng']}";
+  }
+
+  Future<void> _updateRideStatus(String status) async {
+    if (_acceptedRide != null) {
+      await _fs.updateRide(_acceptedRide!.id, {
+        'status': status,
+      });
+      setState(() {
+        _acceptedRide = Ride(
+          riderId: 'riderID: hardcoded',
+          id: _acceptedRide!.id,
+          pickup: _acceptedRide!.pickup,
+          dropoff: _acceptedRide!.dropoff,
+          status: status,
+          driverId: _acceptedRide!.driverId,
+          fare: 5,
+          timestamp: DateTime.now(),
+          paymentStatus: 'unpaid',
+        );
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_acceptedRide == null) {
+      // Show available ride requests
+      return Scaffold(
+        appBar: AppBar(title: const Text('Available Requests')),
+        body: StreamBuilder<List<Ride>>(
+          stream: _fs.streamAvailableRequests(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final rides = snapshot.data!;
+            if (rides.isEmpty) {
+              return const Center(child: Text('No ride requests'));
+            }
+            return ListView.builder(
+              itemCount: rides.length,
+              itemBuilder: (context, index) {
+                final ride = rides[index];
+                return FutureBuilder<String>(
+                  future: _formatAddress(ride.pickup),
+                  builder: (context, pickupSnap) {
+                    return FutureBuilder<String>(
+                      future: _formatAddress(ride.dropoff),
+                      builder: (context, dropoffSnap) {
+                        return ListTile(
+                          title: Text(
+                            'Pickup: ${pickupSnap.data ?? '...'}',
+                          ),
+                          subtitle: Text(
+                            'Dropoff: ${dropoffSnap.data ?? '...'}',
+                          ),
+                          trailing: ElevatedButton(
+                            onPressed: () async {
+                              await _fs.updateRide(ride.id, {
+                                'status': 'accepted',
+                                'driverId':
+                                    'driver_test_1', // TODO: replace with FirebaseAuth uid
+                              });
+                              setState(() {
+                                _acceptedRide = Ride(
+                                    riderId: 'rider_test_1',
+                                    id: ride.id,
+                                    pickup: ride.pickup,
+                                    dropoff: ride.dropoff,
+                                    status: 'accepted',
+                                    driverId: 'driver_test_1',
+                                    fare: 5,
+                                    timestamp: DateTime.now(),
+                                    paymentStatus: 'unpaid');
+                              });
+                            },
+                            child: const Text('Accept'),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
+      );
+    } else {
+      // Show active ride map + workflow buttons
+      return Scaffold(
+        appBar: AppBar(title: const Text('Active Ride')),
+        body: Column(
+          children: [
+            Expanded(
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(
+                    _driverLocation?.latitude ?? _acceptedRide!.pickup['lat'],
+                    _driverLocation?.longitude ?? _acceptedRide!.pickup['lng'],
+                  ),
+                  zoom: 14,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('pickup'),
+                    position: LatLng(
+                      _acceptedRide!.pickup['lat'],
+                      _acceptedRide!.pickup['lng'],
+                    ),
+                    infoWindow: const InfoWindow(title: 'Pickup'),
+                  ),
+                  Marker(
+                    markerId: const MarkerId('dropoff'),
+                    position: LatLng(
+                      _acceptedRide!.dropoff['lat'],
+                      _acceptedRide!.dropoff['lng'],
+                    ),
+                    infoWindow: const InfoWindow(title: 'Dropoff'),
+                  ),
+                  if (_driverLocation != null)
+                    Marker(
+                      markerId: const MarkerId('driver'),
+                      position: LatLng(
+                        _driverLocation!.latitude!,
+                        _driverLocation!.longitude!,
+                      ),
+                      infoWindow: const InfoWindow(title: 'You'),
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueAzure,
+                      ),
+                    ),
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Text('Ride Status: ${_acceptedRide!.status}'),
+                  const SizedBox(height: 10),
+                  if (_acceptedRide!.status == 'accepted')
+                    ElevatedButton(
+                      onPressed: () => _updateRideStatus('arrived'),
+                      child: const Text('Mark Arrived'),
+                    ),
+                  if (_acceptedRide!.status == 'arrived')
+                    ElevatedButton(
+                      onPressed: () => _updateRideStatus('in_progress'),
+                      child: const Text('Start Trip'),
+                    ),
+                  if (_acceptedRide!.status == 'in_progress')
+                    ElevatedButton(
+                      onPressed: () => _updateRideStatus('completed'),
+                      child: const Text('Complete Trip'),
+                    ),
+                  if (_acceptedRide!.status == 'completed')
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() => _acceptedRide = null);
+                      },
+                      child: const Text('Finish & Go Back'),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class Ride {
+  String id;
+  String riderId;
+  String? driverId;
+  Map<String, dynamic> pickup;
+  Map<String, dynamic> dropoff;
+  String status;
+  double fare;
+  DateTime timestamp;
+  String paymentStatus;
+
+  Ride({
+    required this.id,
+    required this.riderId,
+    this.driverId,
+    required this.pickup,
+    required this.dropoff,
+    required this.status,
+    required this.fare,
+    required this.timestamp,
+    required this.paymentStatus,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'riderId': riderId,
+        'driverId': driverId,
+        'pickup': pickup,
+        'dropoff': dropoff,
+        'status': status,
+        'fare': fare,
+        'timestamp': timestamp,
+        'paymentStatus': paymentStatus,
+      };
+
+  static Ride fromMap(Map<String, dynamic> m) => Ride(
+        id: m['id'],
+        riderId: m['riderId'],
+        driverId: m['driverId'],
+        pickup: Map<String, dynamic>.from(m['pickup']),
+        dropoff: Map<String, dynamic>.from(m['dropoff']),
+        status: (m['status'] ?? 'requested').toString().toLowerCase(),
+        fare: (m['fare'] ?? 0).toDouble(),
+        timestamp: (m['timestamp'] is Timestamp)
+            ? (m['timestamp'] as Timestamp).toDate()
+            : DateTime.tryParse(m['timestamp'].toString()) ?? DateTime.now(),
+        paymentStatus: m['paymentStatus'] ?? 'unpaid',
+      );
+}
+import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart';
+
+class MoMoPaymentWidget extends StatefulWidget {
+  final String rideId;
+  final double amount;
+  final VoidCallback onPaymentSuccess;
+
+  const MoMoPaymentWidget({
+    super.key,
+    required this.rideId,
+    required this.amount,
+    required this.onPaymentSuccess,
+  });
+
+  @override
+  State<MoMoPaymentWidget> createState() => _MoMoPaymentWidgetState();
+}
+
+class _MoMoPaymentWidgetState extends State<MoMoPaymentWidget> {
+  final TextEditingController phoneController = TextEditingController();
+  bool isLoading = false;
+  String? statusMessage;
+
+  Future<void> _payWithMoMo() async {
+    final phone = phoneController.text.trim();
+
+    if (phone.isEmpty) {
+      setState(() => statusMessage = "Please enter your phone number");
+      return;
+    }
+
+    if (!phone.startsWith('7') || phone.length != 8) {
+      setState(
+          () => statusMessage = "Please enter a valid MTN number (7xxxxxxx)");
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      statusMessage = null;
+    });
+
+    try {
+      final HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('initiateMoMoPayment');
+      final result = await callable.call({
+        'rideId': widget.rideId,
+        'phoneNumber': phone,
+        'amount': widget.amount,
+      });
+
+      setState(() {
+        statusMessage = "Payment request sent! Approve on your phone.";
+      });
+
+      // Call the success callback
+      widget.onPaymentSuccess();
+    } catch (e) {
+      setState(() {
+        statusMessage = "Payment failed: $e";
+      });
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Pay with MTN MoMo",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Amount: E ${widget.amount.toStringAsFixed(2)}",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: "Enter your phone (7xxxxxxx)",
+              border: OutlineInputBorder(),
+            ),
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(8),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: isLoading ? null : _payWithMoMo,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+            ),
+            child: isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Text("Pay Now"),
+          ),
+          if (statusMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              statusMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: statusMessage!.startsWith("Payment failed")
+                      ? Colors.red
+                      : Colors.green),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+
+Future<String?> requestMomoPayment({
+  required String phone,
+  required double amount,
+  required String rideId,
+}) async {
+  try {
+    final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('requestMomoPayment');
+
+    final result = await callable.call(<String, dynamic>{
+      'phone': phone,
+      'amount': amount,
+      'rideId': rideId,
+    });
+
+    return result.data['referenceId'] as String?;
+  } catch (e) {
+    print('Error requesting MoMo payment: $e');
+    return null;
+  }
+}
+
+void listenForPayment(String rideId) {
+  FirebaseFirestore.instance
+      .collection('rides')
+      .doc(rideId)
+      .snapshots()
+      .listen((snapshot) {
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data();
+    final paid = data?['paid'] as bool? ?? false;
+    final status = data?['momoStatus'] as String? ?? 'PENDING';
+
+    if (paid) {
+      print('Payment successful for ride $rideId!');
+    } else {
+      print('Payment status: $status');
+    }
+  });
+}
+var collectionPrimaryKey = "e46ba3c91ded4bf5a154f532bd6e6288";
+var collectionSecondaryKey = "c7f277b5717747b2ad8d90bd3d943c1b";
+
+var disbursementsPrimaryKey = "d289bc51936544beaf1ecb43dfee401a";
+var disbursementsSecondaryKey = "f92d56f0c00e469eb671d933577be753";
+
+var sandBoxUrl =
+    "https://sandbox.momodeveloper.mtn.com"; //(you pass X-Target-Environment: sandbox)
+var productionUrl =
+    "https://momoapi.mtn.com"; // (you pass X-Target-Environment: production)
+
+var UUID = "71fb0340-47ff-424a-90ec-30f76c9d9c51";
+var apiKey = "5854c24459ad4da4a32bbd3be37b0cc1";
+var accessToken =
+    "eyJ0eXAiOiJKV1QiLCJhbGciOiJSMjU2In0.eyJjbGllbnRJZCI6IjcxZmIwMzQwLTQ3ZmYtNDI0YS05MGVjLTMwZjc2YzlkOWM1MSIsImV4cGlyZXMiOiIyMDI1LTA4LTIzVDE5OjA3OjE0LjgzMiIsInNlc3Npb25JZCI6IjgwNjU2YjQwLTc2YjUtNDdlNS04MzNhLWI1MjdmZmY1ZjczNCJ9.MDzkrhDiF-s-Wqg2Xqu8Z5V0tuSViAj28tGWU489XvzKDvUunjgs31mmKyUX52HPUZshthXhB0Jbs13X2PdpnuXT8_IpoSYYtvC8IyBAs5lHfrtBbTB2YnwCE5DZmwxIsewj4l2oAya7L3fsqn6-6_YoXLjXUpYu0oJWexcBLl8Im_3cqZGGiYHuynOZxLgFEHPt3MDF4K-48MVzK1zTN8BoDJN5THsOdK7SUud5pve1KKOwZ0VdXrtU6pew0Wy7D1rbzNRXH8a3WfPX5z2VvhGjuSCS5QUD_YzUays6dC8gDK3P5Q4scQ_UbYYNhzmK2pMoZIIrQ37ElXbQZquwyQ";
+
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'dart:ui';
+
+class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({super.key});
+
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  final User? user = FirebaseAuth.instance.currentUser;
+  late Stream<QuerySnapshot> _ridesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _ridesStream = FirebaseFirestore.instance
+        .collection('rides_history')
+        .where('riderId', isEqualTo: user!.uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text(
+          'Ride History',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.deepPurple,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade600, Colors.purple.shade50],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: _ridesStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Text('Error: ${snapshot.error}'),
+              );
+            }
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+            final docs = snapshot.data!.docs;
+            if (docs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.history, size: 80, color: Colors.grey.shade300),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No ride history yet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 120, 16, 24),
+              physics: const BouncingScrollPhysics(),
+              itemCount: docs.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final ride = docs[index].data()! as Map<String, dynamic>;
+                return _buildRideCard(ride);
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRideCard(Map<String, dynamic> ride) {
+    final timestamp = (ride['timestamp'] as Timestamp).toDate();
+    final dateLabel = DateFormat.yMMMMd().format(timestamp);
+    final timeLabel = DateFormat.jm().format(timestamp);
+    final fare = (ride['fare'] ?? 0.0) as double;
+    final status = (ride['status'] ?? 'completed') as String;
+    final payment = (ride['paymentStatus'] ?? 'unpaid') as String;
+    final pickup = ride['pickup'] is Map
+        ? '${ride['pickup']['lat'].toStringAsFixed(5)}, ${ride['pickup']['lng'].toStringAsFixed(5)}'
+        : 'Unknown';
+    final dropoff = ride['dropoff'] is Map
+        ? '${ride['dropoff']['lat'].toStringAsFixed(5)}, ${ride['dropoff']['lng'].toStringAsFixed(5)}'
+        : 'Unknown';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.75),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Fare & Status
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'E ${fare.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _getStatusColor(status),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        status.replaceAll('_', ' ').toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Date & Time
+                Text(
+                  '$dateLabel   •   $timeLabel',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                const Divider(color: Colors.grey, height: 1),
+
+                const SizedBox(height: 12),
+
+                // Pickup row
+                Row(
+                  children: [
+                    const Icon(Icons.my_location,
+                        size: 20, color: Colors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        pickup,
+                        style: TextStyle(color: Colors.grey.shade600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Dropoff row
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 20, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        dropoff,
+                        style: TextStyle(color: Colors.grey.shade600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Payment status
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    payment.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: payment == 'paid'
+                          ? Colors.green
+                          : Colors.orange.shade700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.red;
+      case 'in_progress':
+        return Colors.orange;
+      default:
+        return Colors.blueGrey;
+    }
+  }
+}
+
+
+
+
+import 'package:eats/authentication/email_login.dart';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:eats/utils/common_methods.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final User? user = FirebaseAuth.instance.currentUser;
+  Map<String, dynamic>? userData;
+  final ImagePicker _imagePicker = ImagePicker();
+  bool _isUploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+      if (doc.exists) {
+        setState(() {
+          userData = doc.data()!;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final XFile? pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 512,
+        maxHeight: 512,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _isUploading = true;
+        });
+
+        // Upload to Firebase Storage
+        final File imageFile = File(pickedFile.path);
+        final String fileName =
+            'profile_${user!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+        // Upload to Firebase Storage
+        final Reference storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_pictures')
+            .child(fileName);
+
+        final UploadTask uploadTask = storageRef.putFile(imageFile);
+        final TaskSnapshot snapshot = await uploadTask;
+
+        // Get download URL
+        final String downloadUrl = await snapshot.ref.getDownloadURL();
+
+        // Update Firestore with the new profile picture URL
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .update({
+          'profilePictureUrl': downloadUrl,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        // Refresh user data
+        await _fetchUserData();
+
+        CommonMethods.displaySnackBar(
+            'Profile picture updated successfully!', context);
+      }
+    } catch (e) {
+      CommonMethods.displaySnackBar('Error uploading image: $e', context);
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
+  Future<void> _removeProfilePicture() async {
+    try {
+      setState(() {
+        _isUploading = true;
+      });
+
+      // Remove from Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update({
+        'profilePictureUrl': FieldValue.delete(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Refresh user data
+      await _fetchUserData();
+
+      CommonMethods.displaySnackBar('Profile picture removed', context);
+    } catch (e) {
+      CommonMethods.displaySnackBar(
+          'Error removing profile picture: $e', context);
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const EmailLogin()),
+      );
+    } catch (e) {
+      CommonMethods.displaySnackBar('Error signing out: $e', context);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildProfileHeader(),
+            const SizedBox(height: 24),
+            _buildInfoCard(),
+            const SizedBox(height: 24),
+            _buildActionsCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    final String? profilePictureUrl = userData?['profilePictureUrl'];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 120, // Increased size
+                height: 120, // Increased size
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    // Added white border
+                    color: Colors.white,
+                    width: 4.0,
+                  ),
+                  boxShadow: [
+                    // Added shadow
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                  gradient: profilePictureUrl == null
+                      ? LinearGradient(
+                          colors: [
+                            Colors.deepPurple.shade400,
+                            Colors.purple.shade300
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  image: profilePictureUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(profilePictureUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: profilePictureUrl == null
+                    ? Center(
+                        child: Text(
+                          userData?['name'] != null &&
+                                  (userData?['name'] as String).isNotEmpty
+                              ? (userData?['name'] as String)[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              if (!_isUploading)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.camera_alt,
+                          size: 18, color: Colors.white),
+                      onPressed: _pickAndUploadImage,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            userData?['name'] ?? 'User',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            user?.email ?? '',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          if (userData?['profilePictureUrl'] != null) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _removeProfilePicture,
+              child: const Text(
+                'Remove profile picture',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+          if (_isUploading) ...[
+            const SizedBox(height: 16),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 8),
+            const Text('Uploading...'),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Personal Information',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildInfoItem(
+              Icons.person, 'Name', userData?['name'] ?? 'Not provided'),
+          const Divider(),
+          _buildInfoItem(
+              Icons.phone, 'Phone', userData?['phoneNumber'] ?? 'Not provided'),
+          const Divider(),
+          _buildInfoItem(Icons.email, 'Email', user?.email ?? 'Not provided'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.deepPurple),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionsCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildActionButton(
+            Icons.settings,
+            'Settings',
+            () {
+              // Navigate to settings
+            },
+          ),
+          const Divider(),
+          _buildActionButton(
+            Icons.help,
+            'Help & Support',
+            () {
+              // Navigate to help
+            },
+          ),
+          const Divider(),
+          _buildActionButton(
+            Icons.logout,
+            'Logout',
+            _signOut,
+            isLogout: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label, VoidCallback onTap,
+      {bool isLogout = false}) {
+    return ListTile(
+      leading: Icon(icon, color: isLogout ? Colors.red : Colors.deepPurple),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isLogout ? Colors.red : Colors.black,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: Icon(Icons.arrow_forward_ios,
+          size: 16, color: isLogout ? Colors.red : Colors.grey.shade400),
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+}
+
+
+import 'package:eats/rider/screens/history_screen.dart';
+import 'package:eats/rider/screens/ride_request_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:eats/rider/screens/profile_screen.dart';
+
+class RiderHomeScreen extends StatefulWidget {
+  const RiderHomeScreen({super.key});
+
+  @override
+  State<RiderHomeScreen> createState() => _RiderHomeScreenState();
+}
+
+class _RiderHomeScreenState extends State<RiderHomeScreen> {
+  int _selectedIndex = 0;
+  final PageController _pageController = PageController();
+
+  final List<Widget> _screens = [
+    const RiderRequestScreen(),
+    const HistoryScreen(),
+    const ProfileScreen(),
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    _pageController.jumpToPage(index);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(), // Disable swipe
+        children: _screens,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 15,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.deepPurple,
+            unselectedItemColor: Colors.grey.shade500,
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            elevation: 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.local_mall_outlined),
+                activeIcon: Icon(Icons.local_mall),
+                label: 'Request',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.history_outlined),
+                activeIcon: Icon(Icons.history),
+                label: 'History',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'package:eats/MoMo/momo_payment_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
+import 'package:eats/services/firebase_service.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
+import 'package:eats/widgets/fare_calculation.dart';
+import 'package:eats/widgets/rotating_gradient_border.dart';
+import 'dart:ui';
+import 'package:eats/utils/common_methods.dart';
+import 'dart:async';
+
+class RiderRequestScreen extends StatefulWidget {
+  const RiderRequestScreen({super.key});
+  @override
+  State<RiderRequestScreen> createState() => _RiderRequestScreenState();
+}
+
+class _RiderRequestScreenState extends State<RiderRequestScreen>
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  @override
+  bool get wantKeepAlive => true;
+
+  final FirebaseService _fs = FirebaseService();
+  String? currentRideId;
+  final TextEditingController pickupController = TextEditingController();
+  final TextEditingController dropoffController = TextEditingController();
+  GoogleMapController? _mapController;
+  final Location _location = Location();
+  double? _fare;
+  LatLng? _pickupLocation;
+  LatLng? _dropoffLocation;
+  LatLng? _driverLocation;
+  Marker? _driverMarker;
+  bool _awaitingDropoff = false;
+  bool _requesting = false;
+  final bool _isPaymentProcessing = false;
+  bool _isPaymentCompleted = false;
+  String? _paymentStatusMessage;
+  StreamSubscription<LocationData>? _locationSubscription;
+
+  final List<Map<String, dynamic>> _vehicleTypes = [
+    {"name": "Standard", "fareMultiplier": 1.0, "icon": Icons.directions_car},
+    {"name": "Premium", "fareMultiplier": 1.5, "icon": Icons.local_taxi},
+    {"name": "Van", "fareMultiplier": 2.0, "icon": Icons.airport_shuttle},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initLocation();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _location.changeSettings(interval: 0);
+      _locationSubscription?.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      _location.changeSettings(interval: 1000);
+      _locationSubscription?.resume();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _mapController?.dispose();
+    pickupController.dispose();
+    dropoffController.dispose();
+    _locationSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initLocation() async {
+    try {
+      bool serviceEnabled = await _location.serviceEnabled();
+      if (!serviceEnabled) {
+        serviceEnabled = await _location.requestService();
+        if (!serviceEnabled) {
+          CommonMethods.displaySnackBar(
+              'Location service is required', context);
+          return;
+        }
+      }
+
+      PermissionStatus permissionGranted = await _location.hasPermission();
+      if (permissionGranted == PermissionStatus.denied) {
+        permissionGranted = await _location.requestPermission();
+        if (permissionGranted != PermissionStatus.granted) {
+          CommonMethods.displaySnackBar('Location permission denied', context);
+          return;
+        }
+      }
+
+      final loc = await _location.getLocation();
+      if (loc.latitude == null || loc.longitude == null) {
+        CommonMethods.displaySnackBar('Unable to get location', context);
+        return;
+      }
+
+      final initialLatLng = LatLng(loc.latitude!, loc.longitude!);
+      String? address = await _reverseGeocode(initialLatLng);
+
+      setState(() {
+        _pickupLocation = initialLatLng;
+        pickupController.text = address ??
+            '${_pickupLocation!.latitude}, ${_pickupLocation!.longitude}';
+      });
+
+      if (_mapController != null && _pickupLocation != null) {
+        _animateToLocation(_pickupLocation!);
+      }
+
+      _locationSubscription =
+          _location.onLocationChanged.listen((locationData) {
+        if (locationData.latitude != null &&
+            locationData.longitude != null &&
+            _mapController != null &&
+            !_awaitingDropoff) {
+          final newLocation =
+              LatLng(locationData.latitude!, locationData.longitude!);
+          _mapController!.animateCamera(CameraUpdate.newLatLng(newLocation));
+        }
+      });
+    } catch (e) {
+      CommonMethods.displaySnackBar('Location error: $e', context);
+    }
+  }
+
+  String _getMapStyle() {
+    return '''
+[
+  {
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#f5f5f5"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#616161"
+      }
+    ]
+  },
+  {
+    "elementType": "labels.text.stroke",
+    "stylers": [
+      {
+        "color": "#f5f5f5"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.land_parcel",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "administrative.neighborhood",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#eeeeee"
+      }
+    ]
+  },
+  {
+    "featureType": "poi",
+    "elementType": "labels.text",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#d0f0c0"
+      }
+    ]
+  },
+  {
+    "featureType": "poi.park",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "stylers": [
+      {
+        "visibility": "simplified"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#ffffff"
+      }
+    ]
+  },
+  {
+    "featureType": "road",
+    "elementType": "labels.icon",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "road.arterial",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#757575"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#dadada"
+      }
+    ]
+  },
+  {
+    "featureType": "road.highway",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#616161"
+      }
+    ]
+  },
+  {
+    "featureType": "road.local",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  },
+  {
+    "featureType": "transit",
+    "stylers": [
+      {
+        "visibility": "off"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [
+      {
+        "color": "#c9e6ff"
+      }
+    ]
+  },
+  {
+    "featureType": "water",
+    "elementType": "labels.text.fill",
+    "stylers": [
+      {
+        "color": "#9e9e9e"
+      }
+    ]
+  }
+]
+''';
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    _mapController!.setMapStyle(_getMapStyle());
+
+    if (_pickupLocation != null) {
+      _animateToLocation(_pickupLocation!);
+    }
+  }
+
+  void _animateToLocation(LatLng location, {double zoom = 16}) {
+    if (_mapController != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: location,
+            zoom: zoom,
+            bearing: 30,
+            tilt: 45,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _onTap(LatLng position) async {
+    if (!_awaitingDropoff) {
+      setState(() {
+        _pickupLocation = position;
+        _awaitingDropoff = true;
+      });
+      final addr = await _reverseGeocode(position);
+      if (addr != null) {
+        setState(() {
+          pickupController.text = addr;
+        });
+      }
+    } else {
+      setState(() {
+        _dropoffLocation = position;
+        _awaitingDropoff = false;
+      });
+      final addr = await _reverseGeocode(position);
+      if (addr != null) {
+        setState(() {
+          dropoffController.text = addr;
+        });
+      }
+    }
+  }
+
+  Set<Marker> _buildMarkers() {
+    final markers = <Marker>{};
+    if (_pickupLocation != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('pickup'),
+        position: _pickupLocation!,
+        infoWindow: const InfoWindow(title: 'Pickup Location'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      ));
+    }
+    if (_dropoffLocation != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('dropoff'),
+        position: _dropoffLocation!,
+        infoWindow: const InfoWindow(title: 'Destination'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ));
+    }
+    if (_driverMarker != null) {
+      markers.add(_driverMarker!);
+    }
+    return markers;
+  }
+
+  void _updateDriverLocation(LatLng newLocation) {
+    setState(() {
+      _driverLocation = newLocation;
+      _driverMarker = Marker(
+        markerId: const MarkerId('driver'),
+        position: newLocation,
+        infoWindow: const InfoWindow(title: 'Driver'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      );
+    });
+    if (_mapController != null) {
+      _mapController!.animateCamera(CameraUpdate.newLatLng(newLocation));
+    }
+  }
+
+  Future<void> _confirmRideWithVehicle(Map<String, dynamic> vehicleType) async {
+    if (_pickupLocation == null || _dropoffLocation == null) return;
+    setState(() => _requesting = true);
+
+    final pickup = {
+      'lat': _pickupLocation!.latitude,
+      'lng': _pickupLocation!.longitude
+    };
+    final dropoff = {
+      'lat': _dropoffLocation!.latitude,
+      'lng': _dropoffLocation!.longitude
+    };
+
+    double baseFare = simpleFare(
+      LatLng(pickup['lat']!, pickup['lng']!),
+      LatLng(dropoff['lat']!, dropoff['lng']!),
+    );
+
+    double fare = baseFare * vehicleType["fareMultiplier"];
+
+    try {
+      final id = await _fs.createRideRequest(
+        riderId: 'rider_test_1',
+        pickup: pickup,
+        dropoff: dropoff,
+        fare: fare,
+        vehicleType: vehicleType["name"],
+      );
+      setState(() {
+        currentRideId = id;
+        _fare = fare;
+      });
+      _showRideStatusModal();
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error creating ride: $e')));
+    } finally {
+      setState(() => _requesting = false);
+    }
+  }
+
+  Future<void> _completeRide() async {
+    if (currentRideId == null) return;
+    await _fs.completeRide(rideId: currentRideId!);
+    setState(() {
+      currentRideId = null;
+      _isPaymentCompleted = false;
+    });
+  }
+
+  Future<LatLng?> _geocodeAddress(String address) async {
+    try {
+      final results = await geocoding.locationFromAddress(address);
+      if (results.isNotEmpty) {
+        return LatLng(results.first.latitude, results.first.longitude);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error finding location: $e')),
+      );
+    }
+    return null;
+  }
+
+  Future<String?> _reverseGeocode(LatLng position) async {
+    try {
+      final results = await geocoding.placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (results.isNotEmpty) {
+        final place = results.first;
+        return "${place.street}, ${place.locality}, ${place.country}";
+      }
+    } catch (e) {
+      print("Reverse geocoding error: $e");
+    }
+    return null;
+  }
+
+  void _showVehicleSelectionSheet() {
+    String fare = _fare?.toStringAsFixed(2) ?? 'Price not Available';
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Choose Vehicle Type",
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black),
+              ),
+              const SizedBox(height: 16),
+              ..._vehicleTypes.map((type) {
+                return ListTile(
+                  leading: Icon(type["icon"], color: Colors.black87),
+                  title: Text(type["name"]),
+                  subtitle: Text('E$fare'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmRideWithVehicle(type);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRideStatusModal() {
+    if (currentRideId == null) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StreamBuilder(
+        stream: _fs.streamRide(currentRideId!),
+        builder: (context, snapshot) {
+          Widget content;
+          if (!snapshot.hasData) {
+            content = _buildFindingDriverCard();
+          } else {
+            final ride = snapshot.data!;
+            switch (ride.status) {
+              case 'requested':
+                content = _buildFindingDriverCard();
+                break;
+              case 'accepted':
+                content = _buildDriverAcceptedCard(ride.driverId!);
+                break;
+              case 'in_progress':
+                content = _buildInProgressCard();
+                break;
+              case 'completed':
+                content = _buildCompletedCard();
+                break;
+              default:
+                content = _buildFindingDriverCard();
+            }
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: 500),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                final offset = Tween<Offset>(
+                  begin: const Offset(0, 0.2),
+                  end: Offset.zero,
+                ).animate(animation);
+                return SlideTransition(
+                  position: offset,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              layoutBuilder: (current, previous) =>
+                  Stack(alignment: Alignment.center, children: [
+                ...previous,
+                if (current != null) current,
+              ]),
+              child: content,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFindingDriverCard() => Container(
+        key: const ValueKey('requested'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.8),
+              Colors.white.withOpacity(0.6),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search, size: 40, color: Colors.deepPurple),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Finding a driver…',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const CircularProgressIndicator(
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildDriverAcceptedCard(String driverId) => Container(
+        key: const ValueKey('accepted'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.85),
+              Colors.white.withOpacity(0.65)
+            ],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          ),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 12, offset: Offset(0, 6))
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.directions_car,
+                          size: 30, color: Colors.deepPurple),
+                      const SizedBox(width: 12),
+                      Text(
+                        '$driverId has accepted',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  StreamBuilder(
+                    stream: _fs.streamDriverLocation(driverId),
+                    builder: (context, snap) {
+                      if (!snap.hasData) {
+                        return Text('Locating driver…',
+                            style: TextStyle(color: Colors.black54));
+                      }
+                      final loc = snap.data!;
+                      _updateDriverLocation(LatLng(loc['lat'], loc['lng']));
+                      return Text(
+                        'On the way: ${loc['lat'].toStringAsFixed(5)}, ${loc['lng'].toStringAsFixed(5)}',
+                        style: TextStyle(color: Colors.black87),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: _showPaymentModal,
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 32),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.deepPurple, Colors.purpleAccent],
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.purple.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Text(
+                        'Pay E${_fare?.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildInProgressCard() => Container(
+        key: const ValueKey('in_progress'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.9),
+              Colors.white.withOpacity(0.7)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 12, offset: Offset(0, 6))
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.directions_run,
+                      size: 40, color: Colors.deepPurple),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Ride in progress…',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 24),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _completeRide();
+                    },
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 32),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.purpleAccent, Colors.deepPurple],
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.purple.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: Offset(0, 4)),
+                        ],
+                      ),
+                      child: Text(
+                        'Mark Complete',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+  Widget _buildCompletedCard() => Container(
+        key: const ValueKey('completed'),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withOpacity(0.95),
+              Colors.white.withOpacity(0.8)
+            ],
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+          ),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 12, offset: Offset(0, 6))
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: 400),
+                child: _isPaymentCompleted
+                    ? Column(
+                        key: ValueKey('paid'),
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle,
+                              size: 50, color: Colors.green),
+                          const SizedBox(height: 16),
+                          Text('Payment Success!',
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.w600)),
+                        ],
+                      )
+                    : _isPaymentProcessing
+                        ? Column(
+                            key: ValueKey('processing'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 16),
+                              Text('Processing…',
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600)),
+                            ],
+                          )
+                        : Column(
+                            key: ValueKey('unpaid'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check,
+                                  size: 50, color: Colors.deepPurple),
+                              const SizedBox(height: 16),
+                              Text('Ride Completed',
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 24),
+                              GestureDetector(
+                                onTap: _showPaymentModal,
+                                child: AnimatedContainer(
+                                  duration: Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 14, horizontal: 32),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.deepPurple,
+                                        Colors.purpleAccent
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(30),
+                                    boxShadow: [
+                                      BoxShadow(
+                                          color: Colors.purple.withOpacity(0.3),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 4)),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    'Pay Now',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+  void _showPaymentModal() {
+    if (currentRideId == null || _fare == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => MoMoPaymentWidget(
+        rideId: currentRideId!,
+        amount: _fare!,
+        onPaymentSuccess: () {
+          setState(() {
+            _isPaymentCompleted = true;
+          });
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Scaffold(
+      body: Stack(
+        children: [
+          GoogleMap(
+            onMapCreated: _onMapCreated,
+            onTap: _onTap,
+            initialCameraPosition: CameraPosition(
+                target: _pickupLocation ?? const LatLng(-26.2041, 28.0473),
+                zoom: 14,
+                bearing: 30,
+                tilt: 45),
+            markers: _buildMarkers(),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+            compassEnabled: true,
+            mapToolbarEnabled: false,
+            buildingsEnabled: true,
+            rotateGesturesEnabled: true,
+            tiltGesturesEnabled: true,
+            zoomControlsEnabled: false,
+            padding: const EdgeInsets.only(
+              top: 150,
+              bottom: 100,
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 12,
+            left: 16,
+            right: 16,
+            child: Card(
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: pickupController,
+                      decoration: InputDecoration(
+                        labelText: 'Pickup location',
+                        hintText: 'Where are you?',
+                        prefixIcon:
+                            Icon(Icons.location_on, color: Colors.deepPurple),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                      onChanged: (value) async {
+                        if (value.isEmpty) {
+                          setState(() => _pickupLocation = null);
+                          return;
+                        }
+                        final coords = await _geocodeAddress(value);
+                        if (coords != null) {
+                          setState(() => _pickupLocation = coords);
+                          _animateToLocation(coords);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: dropoffController,
+                      decoration: InputDecoration(
+                        labelText: 'Destination',
+                        hintText: 'Where to?',
+                        prefixIcon: Icon(Icons.flag, color: Colors.red),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                      onChanged: (value) async {
+                        if (value.isEmpty) {
+                          setState(() => _dropoffLocation = null);
+                          return;
+                        }
+                        final coords = await _geocodeAddress(value);
+                        if (coords != null) {
+                          setState(() => _dropoffLocation = coords);
+                          _animateToLocation(coords);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 20,
+            left: 20,
+            right: 20,
+            child: RainbowButton(
+              backgroundColor: Colors.deepPurple,
+              onPressed: _requesting
+                  ? null
+                  : () async {
+                      _showVehicleSelectionSheet();
+                    },
+              child: _requesting
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Confirm Ride',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+import 'package:eats/models/ride_model.dart';
+
+class FirebaseService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String rideCollection = 'rides';
+  final _uuid = Uuid();
+
+  // Create ride request
+// Enhanced FirebaseService methods with error handling
+  Future<String> createRideRequest({
+    required String riderId,
+    required Map<String, dynamic> pickup,
+    required Map<String, dynamic> dropoff,
+    required double fare,
+    required String vehicleType,
+  }) async {
+    try {
+      final id = _uuid.v4();
+      final now = FieldValue.serverTimestamp();
+
+      final Map<String, dynamic> data = {
+        'id': id,
+        'riderId': riderId,
+        'driverId': null,
+        'pickup': pickup,
+        'dropoff': dropoff,
+        'status': 'requested',
+        'fare': fare,
+        'vehicleType': vehicleType,
+        'paymentStatus': 'unpaid',
+        'paymentRequestId': null,
+        'paymentProvider': null,
+        'paymentRequestedAt': null,
+        'paymentConfirmedAt': null,
+        'createdAt': now,
+        'updatedAt': now,
+      };
+
+      await _db.collection(rideCollection).doc(id).set(data);
+      return id;
+    } catch (e) {
+      print('Error creating ride request: $e');
+      throw Exception('Failed to create ride request. Please try again.');
+    }
+  }
+
+  // Listen to available requests (for drivers)
+  Stream<List<Ride>> streamAvailableRequests() {
+    return _db
+        .collection(rideCollection)
+        .where('status', isEqualTo: 'requested')
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => Ride.fromMap(Map<String, dynamic>.from(d.data())))
+            .toList());
+  }
+
+  // Listen to a single ride
+  Stream<Ride> streamRide(String id) {
+    return _db
+        .collection(rideCollection)
+        .doc(id)
+        .snapshots()
+        .where((snap) => snap.exists)
+        .map((snap) => Ride.fromMap(Map<String, dynamic>.from(snap.data()!)));
+  }
+
+  // Driver accepts ride
+  Future<void> acceptRide(
+      {required String rideId, required String driverId}) async {
+    await _db.collection(rideCollection).doc(rideId).update({
+      'driverId': driverId,
+      'status': 'accepted',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Start ride
+  Future<void> startRide({required String rideId}) async {
+    await _db.collection(rideCollection).doc(rideId).update({
+      'status': 'in_progress',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Complete ride
+  Future<void> completeRide({required String rideId}) async {
+    final doc = await _db.collection(rideCollection).doc(rideId).get();
+    if (!doc.exists) return;
+    final data = doc.data()!;
+    // copy to history
+    await _db.collection('rides_history').doc(rideId).set(data);
+    // delete from active
+    await _db.collection(rideCollection).doc(rideId).delete();
+  }
+
+  Future<void> updateRide(String rideId, Map<String, dynamic> data) async {
+    try {
+      final updates = Map<String, dynamic>.from(data);
+      updates['updatedAt'] = FieldValue.serverTimestamp();
+      await _db.collection(rideCollection).doc(rideId).update(updates);
+    } catch (e) {
+      print('Error updating ride $rideId: $e');
+      rethrow;
+    }
+  }
+
+  // Update driver location (simple implementation)
+  Future<void> updateDriverLocation({
+    required String driverId,
+    required double lat,
+    required double lng,
+  }) async {
+    await _db.collection('drivers').doc(driverId).set({
+      'location': {'lat': lat, 'lng': lng},
+      'timestamp': DateTime.now().toIso8601String()
+    });
+  }
+
+  // Stream driver location
+  Stream<Map<String, dynamic>?> streamDriverLocation(String driverId) {
+    return _db.collection('drivers').doc(driverId).snapshots().map((s) =>
+        s.exists ? Map<String, dynamic>.from(s.data()!['location']) : null);
+  }
+
+  // --- Payment helpers (used by your callable function / webhook on the backend)
+
+  /// Called by your server/cloud-function immediately after sending the provider request.
+  /// Marks the ride's payment as 'requested' and stores the provider request id.
+  Future<void> markPaymentRequested({
+    required String rideId,
+    required String paymentRequestId,
+    required String provider, // e.g. 'mtn_momo'
+  }) async {
+    await _db.collection(rideCollection).doc(rideId).update({
+      'paymentStatus': 'requested',
+      'paymentRequestId': paymentRequestId,
+      'paymentProvider': provider,
+      'paymentRequestedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Called by the webhook handler when provider confirms or fails.
+  Future<void> markPaymentResult({
+    required String rideId,
+    required bool success,
+    String? providerRef,
+  }) async {
+    final updates = <String, dynamic>{
+      'paymentStatus': success ? 'paid' : 'failed',
+      'paymentConfirmedAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (providerRef != null) updates['paymentProviderRef'] = providerRef;
+    await _db.collection(rideCollection).doc(rideId).update(updates);
+  }
+}
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
+
+class LocationService {
+  final Location _location = Location();
+  GoogleMapController? _mapController;
+
+  LatLng? _pickupLocation;
+  LatLng? _dropoffLocation;
+  LatLng? _driverLocation;
+  Marker? _driverMarker;
+
+  LatLng? get currentLocation => _pickupLocation;
+  LatLng? get pickupLocation => _pickupLocation;
+  LatLng? get dropoffLocation => _dropoffLocation;
+
+  Future<void> initializeLocation() async {
+    bool serviceEnabled = await _location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await _location.requestService();
+      if (!serviceEnabled) return;
+    }
+
+    PermissionStatus permissionGranted = await _location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await _location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) return;
+    }
+
+    final loc = await _location.getLocation();
+    _pickupLocation =
+        LatLng(loc.latitude ?? -26.2041, loc.longitude ?? 28.0473);
+
+    _location.onLocationChanged.listen((locationData) {
+      if (locationData.latitude != null &&
+          locationData.longitude != null &&
+          _mapController != null) {
+        final newLocation =
+            LatLng(locationData.latitude!, locationData.longitude!);
+        _mapController!.animateCamera(CameraUpdate.newLatLng(newLocation));
+      }
+    });
+  }
+
+  void onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    if (_pickupLocation != null) {
+      _mapController!.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: _pickupLocation!, zoom: 14),
+        ),
+      );
+    }
+  }
+
+  void updatePickupLocation(LatLng location) {
+    _pickupLocation = location;
+  }
+
+  void updateDropoffLocation(LatLng location) {
+    _dropoffLocation = location;
+  }
+
+  void updateDriverLocation(LatLng newLocation) {
+    _driverLocation = newLocation;
+    _driverMarker = Marker(
+      markerId: MarkerId('driver'),
+      position: newLocation,
+      infoWindow: InfoWindow(title: 'Driver'),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+    );
+
+    _mapController?.animateCamera(CameraUpdate.newLatLng(newLocation));
+  }
+
+  Set<Marker> buildMarkers() {
+    final markers = <Marker>{};
+    if (_pickupLocation != null) {
+      markers.add(Marker(
+        markerId: MarkerId('pickup'),
+        position: _pickupLocation!,
+        infoWindow: InfoWindow(title: 'Pickup'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      ));
+    }
+    if (_dropoffLocation != null) {
+      markers.add(Marker(
+        markerId: MarkerId('dropoff'),
+        position: _dropoffLocation!,
+        infoWindow: InfoWindow(title: 'Dropoff'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+      ));
+    }
+    if (_driverMarker != null) markers.add(_driverMarker!);
+    return markers;
+  }
+
+  Future<String?> reverseGeocode(LatLng position) async {
+    try {
+      final results = await geocoding.placemarkFromCoordinates(
+          position.latitude, position.longitude);
+      if (results.isNotEmpty) {
+        final place = results.first;
+        return "${place.street}, ${place.locality}, ${place.country}";
+      }
+    } catch (e) {
+      print("Reverse geocoding error: $e");
+    }
+    return null;
+  }
+
+  Future<LatLng?> geocodeAddress(String address) async {
+    try {
+      final results = await geocoding.locationFromAddress(address);
+      if (results.isNotEmpty) {
+        return LatLng(results.first.latitude, results.first.longitude);
+      }
+    } catch (e) {
+      print("Geocoding error: $e");
+    }
+    return null;
+  }
+}
+import 'package:eats/models/ride_model.dart';
+import 'package:eats/services/firebase_service.dart';
+
+class RideService {
+  final FirebaseService _firebaseService = FirebaseService();
+  Future<String> createRideRequest({
+    required String riderId,
+    required Map<String, dynamic> pickup,
+    required Map<String, dynamic> dropoff,
+    required double fare,
+    required String vehicleType,
+  }) async {
+    return await _firebaseService.createRideRequest(
+        riderId: riderId,
+        pickup: pickup,
+        dropoff: dropoff,
+        fare: fare,
+        vehicleType: vehicleType);
+  }
+
+  Future<void> completeRide({required String rideId}) async {
+    return await _firebaseService.completeRide(rideId: rideId);
+  }
+
+  // Fix: Return Stream<Ride> instead of Stream<Map<String, dynamic>>
+  Stream<Ride> streamRide(String rideId) {
+    return _firebaseService.streamRide(rideId);
+  }
+
+  Stream<Map<String, dynamic>?> streamDriverLocation(String driverId) {
+    return _firebaseService.streamDriverLocation(driverId);
+  }
+}
+import 'package:flutter/material.dart';
+
+/// A rainbow rotating border that wraps an ElevatedButton.
+/// Supports both sync and async onPressed.
+class RainbowButton extends StatefulWidget {
+  final Future<void> Function()? onPressed; // now supports async!
+  final Widget child;
+  final double borderWidth;
+  final double borderRadius;
+  final Duration duration;
+  final Color backgroundColor;
+
+  const RainbowButton({
+    super.key,
+    required this.onPressed,
+    required this.child,
+    this.borderWidth = 3,
+    this.borderRadius = 12,
+    this.duration = const Duration(seconds: 6),
+    this.backgroundColor = Colors.black,
+  });
+
+  @override
+  State<RainbowButton> createState() => _RainbowButtonState();
+}
+
+class _RainbowButtonState extends State<RainbowButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePress() async {
+    if (widget.onPressed == null) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onPressed!();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, __) {
+        return Container(
+          padding: EdgeInsets.all(widget.borderWidth),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            gradient: SweepGradient(
+              colors: const [
+                Colors.red,
+                Colors.orange,
+                Colors.yellow,
+                Colors.green,
+                Colors.cyan,
+                Colors.blue,
+                Colors.purple,
+                Colors.red,
+              ],
+              stops: const [0.0, 0.16, 0.33, 0.5, 0.66, 0.83, 1.0, 1.0],
+              transform: GradientRotation(_controller.value * 6.283),
+            ),
+          ),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.backgroundColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                    widget.borderRadius - widget.borderWidth),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              elevation: 0,
+            ),
+            onPressed:
+                widget.onPressed == null || _loading ? null : _handlePress,
+            child: _loading
+                ? const SizedBox(
+                    height: 10,
+                    width: 10,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : widget.child,
+          ),
+        );
+      },
+    );
+  }
+}
+/**
+ * Import function triggers from their respective submodules:
+ *
+ * const {onCall} = require("firebase-functions/v2/https");
+ * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+ *
+ * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ */
+
+const {onRequest} = require("firebase-functions/v2/https");
+const logger = require("firebase-functions/logger");
+
+// Create and deploy your first functions
+// https://firebase.google.com/docs/functions/get-started
+
+// exports.helloWorld = onRequest((request, response) => {
+//   logger.info("Hello logs!", {structuredData: true});
+//   response.send("Hello from Firebase!");
+// });
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const axios = require("axios");
+const { v4: uuidv4 } = require("uuid");
+
+admin.initializeApp();
+
+const MOMO_SUBSCRIPTION_KEY = functions.config().momo.primarykey; // from firebase config
+const MOMO_USER_ID = functions.config().momo.userid;
+const MOMO_API_KEY = functions.config().momo.apikey;
+const MOMO_ENV = functions.config().momo.env || "sandbox";
+const MOMO_API = MOMO_ENV === "sandbox"
+  ? "https://sandbox.momodeveloper.mtn.com"
+  : "https://momodeveloper.mtn.com";
+
+// Step 1: Get access token
+async function getMomoAccessToken() {
+  const auth = Buffer.from(`${MOMO_USER_ID}:${MOMO_API_KEY}`).toString("base64");
+  const response = await axios.post(`${MOMO_API}/collection/token/`, {}, {
+    headers: {
+      "Authorization": `Basic ${auth}`,
+      "Ocp-Apim-Subscription-Key": MOMO_SUBSCRIPTION_KEY
+    }
+  });
+  return response.data.access_token;
+}
+
+// Step 2: Request payment from customer
+exports.requestMomoPayment = functions.https.onCall(async (data, context) => {
+  const { phone, amount, rideId } = data;
+
+  if (!phone || !amount || !rideId) {
+    throw new functions.https.HttpsError("invalid-argument", "phone, amount, and rideId are required");
+  }
+
+  const token = await getMomoAccessToken();
+  const referenceId = uuidv4();
+
+  await axios.post(`${MOMO_API}/collection/v1_0/requesttopay`, {
+    amount: amount.toString(),
+    currency: "SZL",
+    externalId: rideId,
+    payer: { partyIdType: "MSISDN", partyId: phone },
+    payerMessage: "Payment for Kombi ride",
+    payeeNote: "Thank you for riding with us"
+  }, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "X-Reference-Id": referenceId,
+      "X-Target-Environment": MOMO_ENV,
+      "Ocp-Apim-Subscription-Key": MOMO_SUBSCRIPTION_KEY,
+      "Content-Type": "application/json"
+    }
+  });
+
+  // Optionally, store referenceId to track payment status
+  await admin.firestore().collection("rides").doc(rideId).set({
+    momoReferenceId: referenceId,
+    momoAmount: amount,
+    momoPhone: phone,
+    momoStatus: "PENDING"
+  }, { merge: true });
+
+  return { referenceId };
+});
+
+// Verify MoMo Payment
+exports.verifyMomoPayment = functions.https.onCall(async (data, context) => {
+  const { referenceId, rideId } = data;
+
+  if (!referenceId || !rideId) {
+    throw new functions.https.HttpsError("invalid-argument", "referenceId and rideId are required");
+  }
+
+  const token = await getMomoAccessToken();
+
+  try {
+    const response = await axios.get(`${MOMO_API}/collection/v1_0/requesttopay/${referenceId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "X-Target-Environment": MOMO_ENV,
+        "Ocp-Apim-Subscription-Key": MOMO_SUBSCRIPTION_KEY
+      }
+    });
+
+    const status = response.data.status;
+
+    // Update Firestore based on payment status
+    let paid = false;
+    if (status === "SUCCESSFUL") paid = true;
+
+    await admin.firestore().collection("rides").doc(rideId).set({
+      momoStatus: status,
+      paid: paid,
+      paymentMethod: "MoMo",
+      momoDetails: response.data
+    }, { merge: true });
+
+    return { success: paid, status };
+  } catch (error) {
+    console.error("MoMo verification error:", error.response?.data || error.message);
+    throw new functions.https.HttpsError("internal", "Failed to verify MoMo payment");
+  }
+});
