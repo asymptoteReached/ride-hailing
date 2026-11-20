@@ -99,7 +99,7 @@
 //     {"name": "Premium", "fareMultiplier": 1.5, "icon": Icons.local_taxi},
 //     {"name": "Van", "fareMultiplier": 2.0, "icon": Icons.airport_shuttle},
 //   ];
-//   final String googleplacesKey = 'AIzaSyDoo8xg8i1eajh9Ft8ioADZNo27BajyonQ';
+//   final String googleplacesKey = const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
 
 //   @override
 //   void initState() {
