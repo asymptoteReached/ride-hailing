@@ -133,7 +133,7 @@ class _RiderRequestScreenState extends State<RiderRequestScreen>
     {"name": "Van", "fareMultiplier": 2.0, "icon": Icons.airport_shuttle},
   ];
   static const String googleplacesKey =
-      'AIzaSyDoo8xg8i1eajh9Ft8ioADZNo27BajyonQ';
+      const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
 
   // Cache for map style
   static final String _mapStyle = _getMapStyle();
